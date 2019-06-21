@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+
+<head>
+  <meta charset="utf-8" />
+
+  <!-- Bootstrap setting -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js"></script>
+  <title>Phase de test projet JF / Module UploadIMG</title>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="row">
+      <div class="alert alert-warning mx-auto" role="alert">
+        Une sauvegarde automatique a été detectée. Si votre session a été interrompue
+        momentanément, veuillez glisser une nouvelles fois les fichiers utilisés
+        précédemment.
+      </div>
+      <div class="alert alert-success mx-auto" role="alert">
+        Le chargement des fichiers et de leurs données a été exécuté avec succès !
+      </div>
+      <div class="col-10 mx-auto" id="fileList">
+
+      </div>
+      <button class="btn btn-danger mx-auto" type="button" id="upload">Upload</button>
+    </div>
+    <div class="row pt-5">
+      <div id="onHoldTextarea" class="col-12 text-center">
+        <input id="imgTitle" type="text" name="" value="" placeholder="Titre de l'image" />
+        <input id="imgSection" type="text" name="" value="" placeholder="Section de l'image" />
+        <textarea class="onHoldTextImg" name="" placeholder="Entrer du texte"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.4.0.js" integrity="sha256-DYZMCC8HTC+QDr5QNaIcfR7VSPtcISykd+6eSmBW5qo=" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js" integrity="sha256-0YPKAwZP7Mp3ALMRVB2i8GXeEndvCq3eSl/WsAl1Ryk=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  <!-- JSmaiSON -->
+  <script type="text/javascript" src="assets/scripts/main.js"></script>
+</body>
+
+</html>

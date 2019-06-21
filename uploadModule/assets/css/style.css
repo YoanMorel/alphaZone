@@ -1,0 +1,41 @@
+div#fileList {
+  border: 3px dashed #BBB;
+  border-radius: 10px;
+  min-height: 400px;
+}
+
+img.imgDrop {
+  display: inline;
+  width: 10rem;
+  margin: 10px;
+}
+
+div.alert-warning {
+  display: none;
+}
+
+div.alert-success {
+  display: none;
+}
+
+input[type="text"],
+textarea {
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	outline: none;
+	display: block;
+	width: 75%;
+  height: 35px;
+	border: none;
+	border-bottom: 2px solid #BBB;
+	background: transparent;
+	margin: 0 auto 1rem auto;
+	font: 16px Arial, Helvetica, sans-serif;
+	resize:none;
+	overflow: hidden;
+}
+
+div.col-12 {
+  display: none;
+}
