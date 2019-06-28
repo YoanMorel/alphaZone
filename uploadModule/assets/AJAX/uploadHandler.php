@@ -1,8 +1,10 @@
 <?php
 
+  require '../../../../config/config.php';
+
   extract($_POST);
 
-  $dataBase = mysqli_connect('localhost', 'yoan', '', 'atelierJF');
+  $dataBase = mysqli_connect('localhost', 'yoan', $passwordAJF, 'atelierJF');
   $name = md5(rand().time().'unPeuDePaprikaPourDonnerDuGoutAMonHash').'.jpg';
   $encodedData = str_replace(' ', '+', $file);
   $decodedData = base64_decode($encodedData);

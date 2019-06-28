@@ -17,6 +17,7 @@ $(function() {
     this.text = text;
   }
 
+  // Fonction qui retourne l'index de l'objet trouvé dans un tableau
   function fetchTheObj(tab, target) {
     return tab.find(x => x.id === target)
   }
@@ -161,8 +162,7 @@ $(function() {
 
     if (divIne.css('display') !== 'none' && textArea.attr('name') !== imgId) {
       divIne.hide();
-      imgTitle.val('');
-      textArea.val('');
+      $('textarea, input').val('');
     }
 
     textArea.attr('name', imgId);
@@ -187,6 +187,8 @@ $(function() {
         console.log(objsTab);
       }
       $(this).parent().remove();
+      $('#onHoldTextarea').hide();
+      $('textarea, input').val('');
     }
   });
 

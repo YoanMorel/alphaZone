@@ -1,8 +1,10 @@
 <?php
 
+require '../../../../config/config.php';
+
 extract($_POST);
 
-$dataBase = mysqli_connect('localhost', 'yoan', 'a8x305j', 'atelierJF');
+$dataBase = mysqli_connect('localhost', 'yoan', $passwordAJF, 'atelierJF');
 
 if (empty($imgSection)):
   $sqlRequest = 'SELECT section FROM sections';
