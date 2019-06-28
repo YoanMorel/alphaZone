@@ -1,19 +1,61 @@
 $(function() {
 
-  // Tableau stockage des images, tableaux stockages des données concernant les images
-  var fileStorage = [];
   var dropBox = $('#fileList');
+
+  // Tableau stockage des images, tableaux stockages des données concernant les images, tableaux pour l'autocompletion
+  var fileStorage = [];
   var objsTab = [];
+  var autoCompleteSections = [];
+  var autoCompleteSubSections = [];
 
   //Prototype de l'objet contenant les données concernant les images
-  function ObjToUp(id, title, section, text) {
+  function ObjToUp(id, title, section, subSection, text) {
     this.id = id;
     this.title = title;
     this.section = section;
+    this.subSection = subSection;
     this.text = text;
   }
 
-  //Lecture du fichier JSON pour remplir le tableaux de données de fichiers si il y a une sauvegarde. Dans le cas elle existe, on affiche une alerte
+  function fetchTheObj(tab, target) {
+    return tab.find(x => x.id === target)
+  }
+
+  // Requête AJAX pour l'autocomplétion. Elle récupère d'abord les sections puis, une fois la section sélectionnée et si elle existe, récupère ses sous-sections. La requête attend son due au format JSON. Est récupéré un objet particulier : un tableau 4 dims encodé en JSON
+  function autoCompleteSources(section) {
+    $.ajax({
+      type: 'POST',
+      url: 'assets/AJAX/autoComplete.php',
+      dataType: 'json',
+      data: {
+        'imgSection': section
+      },
+      success: function(data) {
+        if (autoCompleteSubSections.length) {
+          autoCompleteSubSections = [];
+        }
+        for (var x in data['data']) {
+          for (var y in data['data'][x]) {
+            if (section) {
+              autoCompleteSubSections.push(data['data'][x][y]);
+            } else {
+              autoCompleteSections.push(data['data'][x][y]);
+            }
+          }
+        }
+      },
+      error: function(XMLHttpRequest, textStatus, errorThrown) {
+        console.log('Status :' + textStatus + ' Error:' + errorThrown);
+      }
+    });
+  }
+
+  // Execute la fonction pour l'autocomplétion dès le chargement
+  if (!autoCompleteSections.length) {
+    autoCompleteSources('');
+  }
+
+  // Lecture du fichier JSON pour remplir le tableaux de données de fichiers si il y a une sauvegarde. Dans le cas elle existe, on affiche une alerte
   $.getJSON('autoSaveBuffer.json', function(data) {
     $.each(data, function(key, val) {
       if (val.text.length) {
@@ -49,11 +91,8 @@ $(function() {
         reader.onload = function(event) {
           if (file.type.match('image.*')) {
             $('button#upload').removeClass('btn-danger').addClass('btn-success');
-            dropBox.prepend($('<img />', {
-              id: i,
-              src: event.target.result,
-              'class': 'img-fluid imgDrop onHold'
-            }));
+            dropBox.append(
+              '<div class="btnOverImg" data-imgid="' + i + '"><img id="' + i + '" class="imgDrop onHold" src="' + event.target.result + '" /><button name="' + i + '" class="btn"><i class="far fa-trash-alt"></i></button></div>');
           }
         };
         reader.readAsDataURL(file);
@@ -67,36 +106,46 @@ $(function() {
   dropBox.on('drop', dropEvent);
 
   // Fonction qui va, à l'aide d'AJAX, envoyer les fichiers vers le serveur. AJAX va executer un script PHP renseigné par son URL. Le fichier PHP va retourner une réponse dans le type de donnée déclaré.
-  function upTheReaderLoad(event) {
-    var img = {};
-    img.file = event.target.result.split(',')[1];
-    var str = $.param(img); // Transforme les objets en parametres transmissibles par méthode POST. Dans ce cas, img.file de viendra transmis par AJAX en method POST file=IMGBASE64
-    $.ajax({
-      type: 'POST',
-      url: 'uploadHandler.php',
-      data: str,
-      success: function(response) {},
-      error: function(XMLHttpRequest, textStatus, errorThrown) {
-        console.log('Status :' + textStatus + ' Error:' + errorThrown);
-      }
-    });
-  }
-
   // Fonction qui va transférer les fichiers de manières asynchrone
-  function UploadFiles(imgToUp) {
+  function UploadFiles(imgToUp, index) {
     var reader = new FileReader;
+    var img = {};
+    var objInTab = objsTab[index];
 
-    reader.onload = upTheReaderLoad;
+    reader.onload = function(event) {
+      img.file = event.target.result.split(',')[1]; // Découpe les données B64 et assigne la seconde valeur du tableau
+      img.title = objInTab.title;
+      img.section = objInTab.section;
+      img.subSection = objInTab.subSection;
+      img.text = objInTab.text;
+      var postUrl = $.param(img); // Transforme les objets en parametres transmissibles par méthode POST. Dans ce cas, img.file de viendra transmis par AJAX en method POST file=IMGBASE64
+
+      $.ajax({
+        type: 'POST',
+        url: 'assets/AJAX/uploadHandler.php',
+        data: postUrl,
+        success: function(response) {
+          console.log(response);
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+          console.log('Status :' + textStatus + ' Error:' + errorThrown);
+        }
+      });
+    };
     reader.readAsDataURL(imgToUp);
   }
 
   // Le click déclenche l'upload en instançiant l'obj UploadFiles
   $('button#upload').on('click', function() {
     $.each(fileStorage, function(i, file) {
-      new UploadFiles(file);
+      new UploadFiles(file, i);
     });
+
+    // A sécuriser en cas d'echec de transfert !!!!
     $('div.alert-success').show();
     $('button#upload').removeClass('btn-success').addClass('btn-danger');
+    $('input, textarea').empty();
+    $('#onHoldTextarea').hide();
     dropBox.css('border', '3px dashed #BBB');
     dropBox.empty();
     objsTab = [];
@@ -117,7 +166,7 @@ $(function() {
     }
 
     textArea.attr('name', imgId);
-    var objFound = objsTab.find(x => x.id === textArea.attr('name'))
+    var objFound = fetchTheObj(objsTab, textArea.attr('name'));
     if (objFound) {
       $('div.alert-warning').fadeOut();
       imgTitle.val(objsTab[objsTab.indexOf(objFound)].title);
@@ -126,15 +175,31 @@ $(function() {
     divIne.show();
   });
 
+  $(document).on('click', '.btnOverImg .btn', function() {
+    var btnId = $(this).attr('name');
+    var divParentId = $(this).parent().data('imgid');
+    var objFound = fetchTheObj(objsTab, btnId);
+    if (btnId == divParentId) {
+      var idToRemove = parseInt(btnId);
+      fileStorage.splice(idToRemove, 1, {})
+      if (objsTab && objFound) {
+        objsTab[objsTab.indexOf(objFound)] = {};
+        console.log(objsTab);
+      }
+      $(this).parent().remove();
+    }
+  });
+
   // Event qui enregistre en temps réel le text tapé dans chaque "textarea". Il peut aussi sauvegarder automatiquement le texte dans un buffer JSON toutes les 5 secondes si aucune touche n'a été pressée dans l'intervale de temps.
   var autoSaveTimer;
 
   $('textarea').on('keyup', function() {
     var idTextarea = $(this).attr('name');
-    var objFound = objsTab.find(x => x.id === idTextarea);
     var textInArea = $(this).val();
     var imgTitle = $('input#imgTitle').val();
     var imgSection = $('input#imgSection').val();
+    var imgSubSection = $('input#imgSubSection').val();
+    var objFound = fetchTheObj(objsTab, idTextarea);
 
     if (!objsTab.length || !objFound) {
       objsTab.push(new ObjToUp(idTextarea, imgTitle, imgSection, textInArea));
@@ -142,20 +207,27 @@ $(function() {
       var objTabIndex = objsTab.indexOf(objFound);
       objsTab[objTabIndex].title = imgTitle;
       objsTab[objTabIndex].section = imgSection;
+      objsTab[objTabIndex].subSection = imgSubSection;
       objsTab[objTabIndex].text = textInArea;
     }
 
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
     }
-
-    autoSaveTimer = setTimeout(autoSaveData, 5000);
+    if (textInArea) {
+      autoSaveTimer = setTimeout(autoSaveData, 5000);
+    }
 
     $(this).css({
       'height': 'auto',
       'margin-bottom': '20px'
     });
     $(this).height($(this)[0].scrollHeight + 'px'); //this[0] pour pouvoir utiliser nativement scrollHeight
+    // scroll automatique quand le champ de text descend en dessous de la taille de la fenetre
+    var textLength = $(this).height() + $(this).offset().top;
+    if (textLength >= $(window).height()) {
+      window.scroll(0, (textLength + 35));
+    }
   });
 
   // Fonction qui va être appelé par le timer au bout de x secondes. Elle va envoyer les données concernant les images sous forme de données JSON et à l'aide d'AJAX, les enregistrer dans un fichier JSON qui sera lu en cas de perte de session.
@@ -164,7 +236,7 @@ $(function() {
       $.ajax({
         type: 'POST',
         dataType: 'json',
-        url: 'autoSave.php',
+        url: 'assets/AJAX/autoSave.php',
         data: {
           data: JSON.stringify(objsTab)
         },
@@ -177,5 +249,20 @@ $(function() {
       });
     }
   }
+
+  $('input#imgSection').autocomplete({
+    source: autoCompleteSections
+  });
+
+  $('input#imgSubSection').autocomplete({
+    source: autoCompleteSubSections
+  });
+
+  $('input#imgSubSection').focus(function() {
+    var imgSection = $('input#imgSection').val();
+    if (imgSection) {
+      autoCompleteSources(imgSection);
+    }
+  });
 
 });

@@ -6,7 +6,7 @@
   fwrite($openFile, $jsonData);
   fclose($openFile);
 
-  $response = json_encode('Autosave executed...');
+  $response = json_encode('Autosave '.date('H:i:s', time()).'...');
   echo $response;
 
  ?>
