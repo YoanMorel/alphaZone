@@ -1,6 +1,12 @@
 $(function() {
 
+  // Liste de selecteurs couramment utilisés
   var dropBox = $('#fileList');
+  var divIne = $('div#onHoldTextarea');
+  var imgTitle = $('input#imgTitle');
+  var imgSection = $('input#imgSection');
+  var imgSubSection = $('input#imgSubSection');
+  var textArea = $('textarea.onHoldTextImg');
 
   // Tableau stockage des images, tableaux stockages des données concernant les images, tableaux pour l'autocompletion
   var fileStorage = [];
@@ -57,7 +63,7 @@ $(function() {
   }
 
   // Lecture du fichier JSON pour remplir le tableaux de données de fichiers si il y a une sauvegarde. Dans le cas elle existe, on affiche une alerte
-  $.getJSON('autoSaveBuffer.json', function(data) {
+  $.getJSON('assets/AJAX/autoSaveBuffer.json', function(data) {
     $.each(data, function(key, val) {
       if (val.text.length) {
         $('div.alert-warning').show();
@@ -91,7 +97,6 @@ $(function() {
         var reader = new FileReader();
         reader.onload = function(event) {
           if (file.type.match('image.*')) {
-            $('button#upload').removeClass('btn-danger').addClass('btn-success');
             dropBox.append(
               '<div class="btnOverImg" data-imgid="' + i + '"><img id="' + i + '" class="imgDrop onHold" src="' + event.target.result + '" /><button name="' + i + '" class="btn"><i class="far fa-trash-alt"></i></button></div>');
           }
@@ -115,10 +120,12 @@ $(function() {
 
     reader.onload = function(event) {
       img.file = event.target.result.split(',')[1]; // Découpe les données B64 et assigne la seconde valeur du tableau
-      img.title = objInTab.title;
-      img.section = objInTab.section;
-      img.subSection = objInTab.subSection;
-      img.text = objInTab.text;
+      if (objInTab) {
+        img.title = objInTab.title;
+        img.section = objInTab.section;
+        img.subSection = objInTab.subSection;
+        img.text = objInTab.text;
+      }
       var postUrl = $.param(img); // Transforme les objets en parametres transmissibles par méthode POST. Dans ce cas, img.file de viendra transmis par AJAX en method POST file=IMGBASE64
 
       $.ajax({
@@ -156,9 +163,6 @@ $(function() {
   // Fonction qui se déclenche en fonction du clic sur une image dropé dans la dropBox. Elle va déclencher l'apparition de la zone de texte et plus de paramètres (à venir) et afficher le texte qui correspond à l'image si déjà tapé/enregistré
   $(document).on('click', 'img.onHold', function() {
     var imgId = $(this).attr('id');
-    var textArea = $('textarea.onHoldTextImg');
-    var divIne = $('div#onHoldTextarea');
-    var imgTitle = $('input#imgTitle');
 
     if (divIne.css('display') !== 'none' && textArea.attr('name') !== imgId) {
       divIne.hide();
@@ -170,63 +174,82 @@ $(function() {
     if (objFound) {
       $('div.alert-warning').fadeOut();
       imgTitle.val(objsTab[objsTab.indexOf(objFound)].title);
+      imgSection.val(objsTab[objsTab.indexOf(objFound)].section);
+      imgSubSection.val(objsTab[objsTab.indexOf(objFound)].subSection);
       textArea.val(objsTab[objsTab.indexOf(objFound)].text);
     }
     divIne.show();
   });
 
-  $(document).on('click', '.btnOverImg .btn', function() {
+  $(document).on('click', '.btnOverImg button.btn', function() {
     var btnId = $(this).attr('name');
     var divParentId = $(this).parent().data('imgid');
     var objFound = fetchTheObj(objsTab, btnId);
+
     if (btnId == divParentId) {
       var idToRemove = parseInt(btnId);
       fileStorage.splice(idToRemove, 1, {})
       if (objsTab && objFound) {
         objsTab[objsTab.indexOf(objFound)] = {};
-        console.log(objsTab);
       }
       $(this).parent().remove();
       $('#onHoldTextarea').hide();
       $('textarea, input').val('');
+      if (!$('img').length) {
+        dropBox.css('border', '3px dashed #BBB');
+        $('button#upload').removeClass('btn-success').addClass('btn-danger');
+      }
     }
   });
 
   // Event qui enregistre en temps réel le text tapé dans chaque "textarea". Il peut aussi sauvegarder automatiquement le texte dans un buffer JSON toutes les 5 secondes si aucune touche n'a été pressée dans l'intervale de temps.
   var autoSaveTimer;
 
-  $('textarea').on('keyup', function() {
-    var idTextarea = $(this).attr('name');
-    var textInArea = $(this).val();
-    var imgTitle = $('input#imgTitle').val();
-    var imgSection = $('input#imgSection').val();
-    var imgSubSection = $('input#imgSubSection').val();
+  $('textarea, input').on('keyup', function() {
+    var idTextarea = textArea.attr('name');
+    var textInArea = textArea.val();
+    var imgTitleContent = imgTitle.val();
+    var imgSectionContent = imgSection.val();
+    var imgSubSectionContent = imgSubSection.val();
     var objFound = fetchTheObj(objsTab, idTextarea);
+    var counter = 0;
 
     if (!objsTab.length || !objFound) {
-      objsTab.push(new ObjToUp(idTextarea, imgTitle, imgSection, textInArea));
+      objsTab.push(new ObjToUp(idTextarea, imgTitleContent, imgSectionContent, imgSubSectionContent, textInArea));
     } else {
       var objTabIndex = objsTab.indexOf(objFound);
-      objsTab[objTabIndex].title = imgTitle;
-      objsTab[objTabIndex].section = imgSection;
-      objsTab[objTabIndex].subSection = imgSubSection;
+      objsTab[objTabIndex].title = imgTitleContent;
+      objsTab[objTabIndex].section = imgSectionContent;
+      objsTab[objTabIndex].subSection = imgSubSectionContent;
       objsTab[objTabIndex].text = textInArea;
+    }
+
+    // Vérifie si tous les champs ont été renseignés pour activer le bouton d'upload
+    $.each(objsTab, function(i, obj) {
+      if (obj.section && obj.subSection && obj.title) {
+        counter++;
+      }
+    });
+    if (objsTab && counter == fileStorage.length) {
+      $('button#upload').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
+    } else {
+      $('button#upload').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
     }
 
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
     }
-    if (textInArea) {
+    if (textInArea || imgTitleContent || imgSectionContent || imgSubSectionContent) {
       autoSaveTimer = setTimeout(autoSaveData, 5000);
     }
 
-    $(this).css({
+    textArea.css({
       'height': 'auto',
       'margin-bottom': '20px'
     });
-    $(this).height($(this)[0].scrollHeight + 'px'); //this[0] pour pouvoir utiliser nativement scrollHeight
+    textArea.height(textArea[0].scrollHeight + 'px'); //this[0] pour pouvoir utiliser nativement scrollHeight
     // scroll automatique quand le champ de text descend en dessous de la taille de la fenetre
-    var textLength = $(this).height() + $(this).offset().top;
+    var textLength = textArea.height() + textArea.offset().top;
     if (textLength >= $(window).height()) {
       window.scroll(0, (textLength + 35));
     }
@@ -261,9 +284,9 @@ $(function() {
   });
 
   $('input#imgSubSection').focus(function() {
-    var imgSection = $('input#imgSection').val();
-    if (imgSection) {
-      autoCompleteSources(imgSection);
+    var imgSectionContent = imgSection.val();
+    if (imgSectionContent) {
+      autoCompleteSources(imgSectionContent);
     }
   });
 

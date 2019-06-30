@@ -4,7 +4,7 @@ require '../../../../config/config.php';
 
 extract($_POST);
 
-$dataBase = mysqli_connect('localhost', 'yoan', $passwordAJF, 'atelierJF');
+$dataBase = mysqli_connect($serverAJF, $userAJF, $passwordAJF, $baseName);
 
 if (empty($imgSection)):
   $sqlRequest = 'SELECT section FROM sections';
