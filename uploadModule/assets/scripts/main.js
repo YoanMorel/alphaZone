@@ -7,6 +7,7 @@ $(function() {
   var imgSection = $('input#imgSection');
   var imgSubSection = $('input#imgSubSection');
   var textArea = $('textarea.onHoldTextImg');
+  var uploadBTN = $('button#upload');
 
   // Tableau stockage des images, tableaux stockages des données concernant les images, tableaux pour l'autocompletion
   var fileStorage = [];
@@ -62,7 +63,7 @@ $(function() {
     autoCompleteSources('');
   }
 
-  // Lecture du fichier JSON pour remplir le tableaux de données de fichiers si il y a une sauvegarde. Dans le cas elle existe, on affiche une alerte
+  // Lecture du fichier JSON pour remplir le tableaux de données de fichiers si il y a une sauvegarde. Dans le cas où elle existe, on affiche une alerte
   $.getJSON('assets/AJAX/autoSaveBuffer.json', function(data) {
     $.each(data, function(key, val) {
       if (val.text.length) {
@@ -151,7 +152,7 @@ $(function() {
 
     // A sécuriser en cas d'echec de transfert !!!!
     $('div.alert-success').show();
-    $('button#upload').removeClass('btn-success').addClass('btn-danger');
+    uploadBTN.removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
     $('input, textarea').empty();
     $('#onHoldTextarea').hide();
     dropBox.css('border', '3px dashed #BBB');
@@ -181,23 +182,27 @@ $(function() {
     divIne.show();
   });
 
+  // Fonction qui au clic sur le bouton de suppression d'image va d'abord remplacer toutes les informations de l'image par un objet vide afin de garder la structure du tableau intacte. Si il n'y a plus d'images détéctées dans la DropBox, la fonction reset tous les tableaux alors chargés d'objets vides.
   $(document).on('click', '.btnOverImg button.btn', function() {
     var btnId = $(this).attr('name');
     var divParentId = $(this).parent().data('imgid');
     var objFound = fetchTheObj(objsTab, btnId);
 
     if (btnId == divParentId) {
-      var idToRemove = parseInt(btnId);
-      fileStorage.splice(idToRemove, 1, {})
+      var idToReplace = parseInt(btnId);
+      fileStorage.splice(idToReplace, 1, {})
       if (objsTab && objFound) {
         objsTab[objsTab.indexOf(objFound)] = {};
       }
       $(this).parent().remove();
       $('#onHoldTextarea').hide();
       $('textarea, input').val('');
-      if (!$('img').length) {
+      if (!$('#fileList img').length) {
+        fileStorage = [];
+        objsTab = [];
+        autoSaveData();
         dropBox.css('border', '3px dashed #BBB');
-        $('button#upload').removeClass('btn-success').addClass('btn-danger');
+        uploadBTN.removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
       }
     }
   });
@@ -231,9 +236,9 @@ $(function() {
       }
     });
     if (objsTab && counter == fileStorage.length) {
-      $('button#upload').removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
+      uploadBTN.removeClass('btn-danger').addClass('btn-success').prop('disabled', false);
     } else {
-      $('button#upload').removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
+      uploadBTN.removeClass('btn-success').addClass('btn-danger').prop('disabled', true);
     }
 
     if (autoSaveTimer) {
@@ -243,6 +248,7 @@ $(function() {
       autoSaveTimer = setTimeout(autoSaveData, 5000);
     }
 
+    // Script qui auto-grow le textarea
     textArea.css({
       'height': 'auto',
       'margin-bottom': '20px'
@@ -265,6 +271,18 @@ $(function() {
         data: {
           data: JSON.stringify(objsTab)
         },
+        success: function(response) {
+          console.log(response);
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+          console.log('Status :' + textStatus + ' Error:' + errorThrown);
+        }
+      });
+    } else {
+      $.ajax({
+        type: 'POST',
+        url: 'assets/AJAX/autoSave.php',
+        data: 'order=66',
         success: function(response) {
           console.log(response);
         },
